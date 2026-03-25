@@ -62,14 +62,16 @@ df_full = carregar_dados_anuais()
 df_previsoes_banco = carregar_banco_previsoes()
 
 
-# --- MENU PRINCIPAL ---
+# --- MENU PRINCIPAL (ROTEAMENTO) ---
 st.sidebar.title("Navegação")
 modo_app = st.sidebar.radio(
     "Escolha o Painel:",
     ["Visão Esportiva", "Visão Técnica"]
 )
 
+# =====================================================================
 # MÓDULO 1: PAINEL DE FUTEBOL E DADOS
+# =====================================================================
 if modo_app == "Visão Esportiva":
     st.title("Seleções: Caminho para 2026")
     st.markdown("Bem-vindo ao painel esportivo! Utilizamos uma Inteligência Artificial para identificar as forças de cada seleção para o ano de 2026.")
@@ -82,7 +84,6 @@ if modo_app == "Visão Esportiva":
         df_consenso = df_2026.groupby('team')['predicted_score'].mean().reset_index()
         df_consenso = df_consenso.sort_values('predicted_score', ascending=False)
         
-        # NOVO: Adicionamos a terceira aba "Máquina do Tempo (Ano a Ano)"
         tab_ranking, tab_selecao, tab_ano = st.tabs(["Ranking Global de Favoritismo", "Análise Individual por Seleção", "Dados por ano"])
         
         with tab_ranking:
@@ -153,7 +154,7 @@ if modo_app == "Visão Esportiva":
                     x=[ultimo_ano, 2026], y=[ultimo_score, score_2026], 
                     mode='lines+markers', name='Previsão 2026 (IA)', 
                     line=dict(color='gray', width=2, dash='dash'), 
-                    marker=dict(color='gray', size=8, symbol='circle') # Bolinha cinza
+                    marker=dict(color='gray', size=8, symbol='circle') 
                 ))
                 
                 fig_linha.update_layout(
@@ -205,7 +206,6 @@ if modo_app == "Visão Esportiva":
                     
                     st.markdown("##### Lista Oficial de Partidas")
                     
-                    # Prepara uma tabela bonita e amigável para o usuário ler
                     df_exibicao = jogos_brutos_ano[['date', 'tournament', 'home_team', 'home_score', 'away_score', 'away_team', 'neutral']].copy()
                     df_exibicao['date'] = pd.to_datetime(df_exibicao['date']).dt.strftime('%d/%m/%Y')
                     df_exibicao['Placar'] = df_exibicao['home_score'].astype(int).astype(str) + " x " + df_exibicao['away_score'].astype(int).astype(str)
@@ -220,7 +220,10 @@ if modo_app == "Visão Esportiva":
     else:
         st.error("Não foram encontradas previsões para 2026 no banco de dados. Verifique a geração do banco.")
 
+# =====================================================================
 # MÓDULO 2: PAINEL DE DATA SCIENCE E TÉCNICAS
+# =====================================================================
+
 elif modo_app == "Visão Técnica":
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Configuração da Simulação")
@@ -339,14 +342,30 @@ elif modo_app == "Visão Técnica":
         cores_linhas = px.colors.qualitative.Plotly
         for i, mod in enumerate(modelos_escolhidos):
             df_m_target = dict_resultados[mod][dict_resultados[mod]['year'] == target_year]
+            
+            # Bolinhas pequenas (outros times)
             df_others = df_m_target[df_m_target['team'] != time_selecionado]
             fig_scatter.add_trace(go.Scatter(x=df_others['performance_score'], y=df_others['predicted_score'], mode='markers', name=mod, marker=dict(color=cores_linhas[i % len(cores_linhas)], size=6, opacity=0.4), text=df_others['team'], customdata=df_others['team'], legendgroup=mod, hovertemplate="<b>%{text}</b><br>Real: %{x:.2f}<br>Previsto: %{y:.2f}<extra></extra>"))
+            
+            # Bolinha grande (time selecionado)
             df_sel = df_m_target[df_m_target['team'] == time_selecionado]
             if not df_sel.empty:
-                fig_scatter.add_trace(go.Scatter(x=df_sel['performance_score'], y=df_sel['predicted_score'], mode='markers', name=f"{mod} ({time_selecionado})", marker=dict(color=cores_linhas[i % len(cores_linhas)], size=18, line=dict(width=3, color='black')), text=df_sel['team'], customdata=df_sel['team'], legendgroup=mod, hovertemplate=f"<b>{time_selecionado}</b><br>Real: %{{x:.2f}}<br>Previsto ({mod}): %{{y:.2f}}<extra></extra>"))
+                # Captura o valor da previsão
+                pred_val = df_sel['predicted_score'].values[0]
+                
+                # Adiciona o valor direto na aparece na legenda
+                fig_scatter.add_trace(go.Scatter(
+                    x=df_sel['performance_score'], y=df_sel['predicted_score'], mode='markers', 
+                    name=f"{mod} ({time_selecionado}): {pred_val:.2f}", 
+                    marker=dict(color=cores_linhas[i % len(cores_linhas)], size=18, line=dict(width=3, color='black')), 
+                    text=df_sel['team'], customdata=df_sel['team'], legendgroup=mod, 
+                    hovertemplate=f"<b>{time_selecionado}</b><br>Real: %{{x:.2f}}<br>Previsto ({mod}): %{{y:.2f}}<extra></extra>"
+                ))
+                
         fig_scatter.add_shape(type="line", line=dict(dash='dash', color='gray'), x0=0, y0=0, x1=3, y1=3)
         fig_scatter.update_layout(xaxis_title="Performance Real", yaxis_title="Performance Prevista", height=500, clickmode='event+select', margin=dict(t=30))
         evento_clique = st.plotly_chart(fig_scatter, width='stretch', on_select="rerun", selection_mode="points")
+        
         if evento_clique and len(evento_clique.selection['points']) > 0:
             ponto = evento_clique.selection['points'][0]
             time_clicado = ponto.get('text', None)
@@ -355,17 +374,41 @@ elif modo_app == "Visão Técnica":
             if time_clicado in times_no_ano and time_clicado != st.session_state['time_selecionado']:
                 st.session_state['time_selecionado'] = time_clicado
                 st.rerun()
-
     with tab3:
         st.markdown(f"##### Variação de Previsões ({target_year - 4} a {target_year})")
         fig_linha = go.Figure()
+        
         df_real_team = df_referencia[df_referencia['team'] == time_selecionado].sort_values('year')
         if not df_real_team.empty:
-            fig_linha.add_trace(go.Scatter(x=df_real_team['year'], y=df_real_team['performance_score'], mode='lines+markers', name='Gabarito (Real)', line=dict(color='#1f77b4', width=3), marker=dict(size=8), hovertemplate="Ano: %{x}<br>Real: %{y:.2f}<extra></extra>"))
-        cores_linhas_evolucao = px.colors.qualitative.Pastel
+            fig_linha.add_trace(go.Scatter(
+                x=df_real_team['year'], y=df_real_team['performance_score'], 
+                mode='lines+markers', name='Pontuação Real', 
+                line=dict(color='#1f77b4', width=3), marker=dict(size=8), 
+                hovertemplate="Ano: %{x}<br>Real: %{y:.2f}<extra></extra>"
+            ))
+        
+        cores_personalizadas = [
+            '#FFD54F', # Amarelo 
+            '#BDBDBD', # Cinza 
+            '#81C784', # Verde 
+            '#FFB74D', # Laranja 
+            '#BA68C8', # Roxo 
+            '#F06292'  # Rosa 
+        ]
+        
         for i, mod in enumerate(modelos_escolhidos):
             df_m_team = dict_resultados[mod][dict_resultados[mod]['team'] == time_selecionado].sort_values('year')
             if not df_m_team.empty:
-                fig_linha.add_trace(go.Scatter(x=df_m_team['year'], y=df_m_team['predicted_score'], mode='lines+markers', name=mod, line=dict(color=cores_linhas_evolucao[i % len(cores_linhas_evolucao)], width=2, dash='dot'), marker=dict(size=6), hovertemplate=f"Ano: %{{x}}<br>{mod}: %{{y:.2f}}<extra></extra>"))
+                
+                cor_linha = cores_personalizadas[i % len(cores_personalizadas)]
+
+                fig_linha.add_trace(go.Scatter(
+                    x=df_m_team['year'], y=df_m_team['predicted_score'], 
+                    mode='lines+markers', name=mod, 
+                    line=dict(color=cor_linha, width=2, dash='dot'), 
+                    marker=dict(size=6), 
+                    hovertemplate=f"Ano: %{{x}}<br>{mod}: %{{y:.2f}}<extra></extra>"
+                ))
+        
         fig_linha.update_layout(xaxis_title="Ano", yaxis_title="Performance Escalonada", height=450, yaxis=dict(range=[-0.2, 3.2]), xaxis=dict(tickmode='linear', dtick=1), margin=dict(l=20, r=20, t=30, b=40), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
         st.plotly_chart(fig_linha, width='stretch')
