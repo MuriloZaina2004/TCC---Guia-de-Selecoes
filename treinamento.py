@@ -74,7 +74,7 @@ modo_app = st.sidebar.radio(
 # ---------------------------------------------------------------------
 if modo_app == "Visão Esportiva":
     st.title("Seleções: Caminho para 2026")
-    st.markdown("Bem-vindo ao painel esportivo! Utilizamos uma Inteligência Artificial para identificar as forças de cada seleção para o ano de 2026.")
+    st.markdown("Bem-vindo ao painel esportivo! Utilizamos Inteligência Artificial para identificar a pontuação de cada seleção para o ano de 2026.")
     
     df_2026 = df_previsoes_banco[df_previsoes_banco['predicted_year'] == 2026]
     if not df_2026.empty:
@@ -87,7 +87,7 @@ if modo_app == "Visão Esportiva":
         tab_ranking, tab_selecao, tab_ano = st.tabs(["Ranking Global de Favoritismo", "Análise Individual por Seleção", "Dados por ano"])
         
         with tab_ranking:
-            st.markdown("##### As 15 Seleções mais fortes para 2026")
+            st.markdown("##### As 15 Seleções com maiores pontuações para 2026")
             top_15 = df_consenso.head(15)
             
             fig_bar = px.bar(
@@ -129,10 +129,10 @@ if modo_app == "Visão Esportiva":
             c2.metric("Taxa de Vitória", f"{taxa_vitoria:.1f}%")
             c3.metric("Gols Marcados", f"{int(gols_feitos)}")
             c4.metric("Gols Sofridos", f"{int(gols_sofridos)}")
-            c5.metric("Força Prevista (2026)", f"{score_2026:.2f}/3.00")
+            c5.metric("Pontuação Prevista (2026)", f"{score_2026:.2f}/3.00")
             
             st.markdown("---")
-            st.markdown("##### Histórico de Gols e Evolução (Últimos 20 anos)")
+            st.markdown("##### Pontuação durante os Últimos 20 anos")
             
             df_historico = df_full[(df_full['team'] == time_escolhido) & (df_full['year'] >= 2005)].sort_values('year')
             if not df_historico.empty:
@@ -181,7 +181,7 @@ if modo_app == "Visão Esportiva":
                 time_ano_escolhido = st.selectbox("2. Selecione a Seleção:", times_do_ano, index=idx_padrao_ano)
                 
             with col_a2:
-                st.markdown(f"#### Dados de {time_ano_escolhido} em {ano_escolhido}")
+                st.markdown(f"#### {time_ano_escolhido} - {ano_escolhido}")
                 
                 # Busca os jogos brutos daquele time naquele exato ano
                 df_bruto['year_temp'] = pd.to_datetime(df_bruto['date']).dt.year
@@ -197,7 +197,7 @@ if modo_app == "Visão Esportiva":
                     gols_sofridos_ano = jogos_brutos_ano.apply(lambda x: x['away_score'] if x['home_team'] == time_ano_escolhido else x['home_score'], axis=1).sum()
                     aproveitamento = ((vitorias * 3) + empates) / (jogos * 3) * 100
 
-                    ca1, ca2, ca3, ca4, ca5 = st.columns(5)
+                    ca1, ca2, ca3, ca4, ca5 = st.columns([1.2, 1.3, 1.2, 0.9, 1.0])
                     ca1.metric("Partidas Disputadas", f"{jogos}")
                     ca2.metric("V - E - D", f"{vitorias} - {empates} - {derrotas}")
                     ca3.metric("Aproveitamento", f"{aproveitamento:.1f}%")
@@ -223,6 +223,7 @@ if modo_app == "Visão Esportiva":
 # ---------------------------------------------------------------------
 # MÓDULO 2: PAINEL DE DATA SCIENCE E TÉCNICAS
 # ---------------------------------------------------------------------
+
 elif modo_app == "Visão Técnica":
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Configuração da Simulação")
