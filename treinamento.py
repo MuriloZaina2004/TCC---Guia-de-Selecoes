@@ -69,9 +69,9 @@ modo_app = st.sidebar.radio(
     ["Visão Esportiva", "Visão Técnica"]
 )
 
-# =====================================================================
+# ---------------------------------------------------------------------
 # MÓDULO 1: PAINEL DE FUTEBOL E DADOS
-# =====================================================================
+# ---------------------------------------------------------------------
 if modo_app == "Visão Esportiva":
     st.title("Seleções: Caminho para 2026")
     st.markdown("Bem-vindo ao painel esportivo! Utilizamos uma Inteligência Artificial para identificar as forças de cada seleção para o ano de 2026.")
@@ -152,7 +152,7 @@ if modo_app == "Visão Esportiva":
                 # 3. Linha tracejada cinza conectando o último ano real até 2026
                 fig_linha.add_trace(go.Scatter(
                     x=[ultimo_ano, 2026], y=[ultimo_score, score_2026], 
-                    mode='lines+markers', name='Previsão 2026 (IA)', 
+                    mode='lines+markers', name='Previsão para 2026', 
                     line=dict(color='gray', width=2, dash='dash'), 
                     marker=dict(color='gray', size=8, symbol='circle') 
                 ))
@@ -220,10 +220,9 @@ if modo_app == "Visão Esportiva":
     else:
         st.error("Não foram encontradas previsões para 2026 no banco de dados. Verifique a geração do banco.")
 
-# =====================================================================
+# ---------------------------------------------------------------------
 # MÓDULO 2: PAINEL DE DATA SCIENCE E TÉCNICAS
-# =====================================================================
-
+# ---------------------------------------------------------------------
 elif modo_app == "Visão Técnica":
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Configuração da Simulação")
