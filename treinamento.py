@@ -63,7 +63,7 @@ df_previsoes_banco = carregar_banco_previsoes()
 
 
 # --- MENU PRINCIPAL (ROTEAMENTO) ---
-st.sidebar.title("Navegação")
+st.sidebar.title("Guia de Seleções")
 modo_app = st.sidebar.radio(
     "Escolha o Painel:",
     ["Visão Esportiva", "Visão Técnica"]
@@ -81,13 +81,18 @@ if modo_app == "Visão Esportiva":
         corte_recente = df_2026['cutoff_year'].max()
         df_2026 = df_2026[df_2026['cutoff_year'] == corte_recente]
         
+        # Filtro de Seleções Zumbis (Ativas nos últimos 10 anos)
+        limite_inatividade = corte_recente - 10
+        times_ativos = df_full[df_full['year'] >= limite_inatividade]['team'].unique()
+        df_2026 = df_2026[df_2026['team'].isin(times_ativos)]
+        
         df_consenso = df_2026.groupby('team')['predicted_score'].mean().reset_index()
         df_consenso = df_consenso.sort_values('predicted_score', ascending=False)
         
-        tab_ranking, tab_selecao, tab_ano = st.tabs(["Ranking Global de Favoritismo", "Análise Individual por Seleção", "Dados por ano"])
+        tab_ranking, tab_selecao, tab_ano = st.tabs(["Ranking global de favoritismo", "Análise individual por seleção", "Dados por ano"])
         
         with tab_ranking:
-            st.markdown("##### As 15 Seleções com maiores pontuações para 2026")
+            st.markdown("##### As 15 seleções com maiores pontuações para 2026")
             top_15 = df_consenso.head(15)
             
             fig_bar = px.bar(
@@ -132,7 +137,7 @@ if modo_app == "Visão Esportiva":
             c5.metric("Pontuação Prevista (2026)", f"{score_2026:.2f}/3.00")
             
             st.markdown("---")
-            st.markdown("##### Pontuação durante os Últimos 20 anos")
+            st.markdown("##### Pontuação durante os últimos 20 anos")
             
             df_historico = df_full[(df_full['team'] == time_escolhido) & (df_full['year'] >= 2005)].sort_values('year')
             if not df_historico.empty:
@@ -232,14 +237,16 @@ elif modo_app == "Visão Técnica":
     modelos_escolhidos = st.sidebar.multiselect("Escolha as Técnicas:", options=lista_modelos_disponiveis, default=["Random Forest", "XGBoost"])
 
     anos_com_gabarito = df_full['year'].unique()
-    anos_disponiveis = [int(ano) for ano in sorted(df_previsoes_banco['predicted_year'].unique()) if ano in anos_com_gabarito]
+    # MUDANÇA AQUI: Adicionado reverse=True
+    anos_disponiveis = [int(ano) for ano in sorted(df_previsoes_banco['predicted_year'].unique(), reverse=True) if ano in anos_com_gabarito]
     
     if not anos_disponiveis:
         st.error("Nenhum dado encontrado no banco que possa ser comparado com a realidade.")
         st.stop()
         
-    target_year = st.sidebar.selectbox("Escolha o Ano a ser analisado:", options=anos_disponiveis, index=len(anos_disponiveis)-1)
-    horizonte_anos = st.sidebar.slider("Anos de Gap:", min_value=1, max_value=10, value=5)
+    # MUDANÇA AQUI: index=0 para selecionar o primeiro da lista (o mais recente)
+    target_year = st.sidebar.selectbox("Escolha o ano a ser analisado:", options=anos_disponiveis, index=0)
+    horizonte_anos = st.sidebar.slider("Anos de gap:", min_value=1, max_value=10, value=5)
 
     cutoff_year = target_year - horizonte_anos 
     lista_anos_alvo = list(range(target_year - 4, target_year + 1))
@@ -308,7 +315,7 @@ elif modo_app == "Visão Técnica":
 
     st.subheader(f"{time_selecionado} (Real: {real_score:.2f})")
 
-    tab1, tab2, tab3 = st.tabs(["Comparativo Entre Técnicas", "Dispersão Global", "Evolução Temporal"])
+    tab1, tab2, tab3 = st.tabs(["Comparativo entre técnicas", "Dispersão global", "Evolução temporal"])
 
     with tab1:
         fig_simples = go.Figure()
